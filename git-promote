@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Promotes a local topic branch to a remote tracking branch of the same name,
+# by pushing and then setting up the git config
+
+remote=${1:-"origin"} 
+cbranch=$(git symbolic-ref -q HEAD | sed -e "s|^refs/heads/||")
+
+git push "${remote}" "${cbranch}"
+
+# Setup merge head
+merge=$(git config --get "branch.${cbranch}.merge")
+
+# Only do it if merge for this branch isn't already configured
+[ -z "${merge}" ] && ( git config --add "branch.${cbranch}.merge" "refs/heads/${cbranch}" )
+
+# Set up remote tracking branch
+upstream=$(git config --get "branch.${cbranch}.remote")
+if [ -n "${upstream}" ] # zero length string
+then
+	echo "I was already tracking ${upstream}"
+	echo "I pushed to ${remote} anyway, but tracking remote will not be changed"
+else
+	git config --add "branch.${cbranch}.remote" ${remote}
+fi
